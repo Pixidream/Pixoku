@@ -377,32 +377,14 @@ class _ThemeSelectorState extends State<ThemeSelector> {
 
   /// Sélectionne un thème
   Future<void> _selectTheme(AppTheme theme) async {
-    final success = await _themeService.setTheme(theme);
-
-    if (success && mounted) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text('Thème "${theme.displayName}" appliqué !'),
-          duration: const Duration(seconds: 2),
-          behavior: SnackBarBehavior.floating,
-        ),
-      );
-    }
+    await _themeService.setTheme(theme);
+    // Notification supprimée pour éviter trop de popups
   }
 
   /// Remet le thème par défaut
   Future<void> _resetToDefault() async {
-    final success = await _themeService.resetTheme();
-
-    if (success && mounted) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text('Thème réinitialisé !'),
-          duration: Duration(seconds: 2),
-          behavior: SnackBarBehavior.floating,
-        ),
-      );
-    }
+    await _themeService.resetTheme();
+    // Notification supprimée pour éviter trop de popups
   }
 }
 

@@ -44,8 +44,8 @@ class _GameScreenState extends State<GameScreen> {
   Timer? _timer;
   int _elapsedSeconds = 0;
 
-  // Historique des mouvements pour l'annulation
-  final List<List<List<int>>> _moveHistory = [];
+  // Historique des mouvements pour l'annulation (stocke l'état complet du puzzle)
+  final List<SudokuPuzzle> _moveHistory = [];
 
   // Services
   final GameService _gameService = GameService.instance;
@@ -77,6 +77,10 @@ class _GameScreenState extends State<GameScreen> {
   @override
   void dispose() {
     _timer?.cancel();
+    // Sauvegarder avant de quitter
+    if (!_gameCompleted) {
+      _saveGame();
+    }
     _themeService.removeListener(_onThemeChanged);
     _feedbackService.dispose();
     super.dispose();
@@ -107,16 +111,18 @@ class _GameScreenState extends State<GameScreen> {
       _selectedCol = null;
       _selectedNumber = null;
 
+      // Restaurer le temps écoulé
+      _elapsedSeconds = saveData.elapsedSeconds;
+
       // Créer une nouvelle session pour la partie chargée
       _gameSession = GameSession(
-        startTime: saveData.savedAt,
+        startTime: DateTime.now().subtract(Duration(seconds: _elapsedSeconds)),
         difficulty: _currentDifficulty,
       );
-      _elapsedSeconds = _gameSession.durationInSeconds;
 
       // Initialiser l'historique avec l'état actuel
       _moveHistory.clear();
-      _moveHistory.add(_puzzle.grid.map((row) => List<int>.from(row)).toList());
+      _moveHistory.add(_puzzle.copyWith());
     });
   }
 
@@ -141,7 +147,7 @@ class _GameScreenState extends State<GameScreen> {
 
       // Initialiser l'historique avec l'état initial
       _moveHistory.clear();
-      _moveHistory.add(_puzzle.grid.map((row) => List<int>.from(row)).toList());
+      _moveHistory.add(_puzzle.copyWith());
     });
 
     // Enregistrer le début de partie dans les stats
@@ -155,10 +161,14 @@ class _GameScreenState extends State<GameScreen> {
     _timer = Timer.periodic(
       const Duration(seconds: 1),
       (timer) {
-        if (mounted) {
+        if (mounted && !_gameCompleted) {
           setState(() {
             _elapsedSeconds++;
           });
+          // Sauvegarde automatique toutes les 10 secondes
+          if (_elapsedSeconds % 10 == 0) {
+            _saveGame();
+          }
         }
       },
     );
@@ -175,12 +185,14 @@ class _GameScreenState extends State<GameScreen> {
       puzzle: _puzzle,
       hintsRemaining: _hintsRemaining,
       difficulty: _currentDifficulty,
+      elapsedSeconds: _elapsedSeconds,
     );
   }
 
-  /// Sauvegarde un mouvement dans l'historique
-  void _saveMoveToHistory() {
-    _moveHistory.add(_puzzle.grid.map((row) => List<int>.from(row)).toList());
+  /// Ajoute l'état actuel du puzzle dans l'historique
+  void _addToHistory(SudokuPuzzle newState) {
+    // Ajouter le nouvel état
+    _moveHistory.add(newState.copyWith());
 
     // Limiter la taille de l'historique
     if (_moveHistory.length > GameConstants.maxMoveHistory) {
@@ -226,44 +238,46 @@ class _GameScreenState extends State<GameScreen> {
       return;
     }
 
-    _saveMoveToHistory();
-
     setState(() {
-      final newGrid = _puzzle.grid.map((row) => List<int>.from(row)).toList();
+      SudokuPuzzle newPuzzle;
 
       if (_isNotesMode) {
         // Mode notes : basculer la note
-        _puzzle = _puzzle.toggleNote(_selectedRow!, _selectedCol!, number);
+        newPuzzle = _puzzle.toggleNote(_selectedRow!, _selectedCol!, number);
         _feedbackService.cellSelected();
       } else {
         // Mode normal : placer le nombre
-        if (newGrid[_selectedRow!][_selectedCol!] == number) {
+        final newGrid = _puzzle.grid.map((row) => List<int>.from(row)).toList();
+        final currentValue = newGrid[_selectedRow!][_selectedCol!];
+
+        if (currentValue == number) {
           // Effacer si le même nombre est sélectionné
           newGrid[_selectedRow!][_selectedCol!] = 0;
           _selectedNumber = null;
+          newPuzzle = _puzzle.copyWith(grid: newGrid);
           _feedbackService.numberRemoved();
         } else {
           // Placer le nouveau nombre
           newGrid[_selectedRow!][_selectedCol!] = number;
           _selectedNumber = number;
 
+          // Appliquer le changement et nettoyer les notes
+          newPuzzle = _puzzle.copyWith(grid: newGrid).clearInvalidNotes(_selectedRow!, _selectedCol!, number);
+
           // Vérifier si c'est une erreur (valeur invalide)
-          if (!_puzzle.isValidMove(_selectedRow!, _selectedCol!, number)) {
+          if (!newPuzzle.isValidMove(_selectedRow!, _selectedCol!, number)) {
             _gameSession.errorsCount++;
             _feedbackService.errorOccurred();
             _gridKey.currentState?.playErrorWave();
           } else {
             _feedbackService.numberPlaced();
           }
-
-          // Nettoyer les notes invalides dans la région
-          _puzzle = _puzzle.copyWith(grid: newGrid).clearInvalidNotes(_selectedRow!, _selectedCol!, number);
-        }
-
-        if (newGrid[_selectedRow!][_selectedCol!] == 0) {
-          _puzzle = _puzzle.copyWith(grid: newGrid);
         }
       }
+
+      // Appliquer le changement et l'ajouter à l'historique
+      _puzzle = newPuzzle;
+      _addToHistory(_puzzle);
     });
 
     _saveGame();
@@ -303,17 +317,25 @@ class _GameScreenState extends State<GameScreen> {
 
   /// Annule le dernier mouvement
   void _undoMove() {
+    // Il faut au moins 2 états : l'état initial et l'état actuel
     if (_moveHistory.length <= 1) {
       _feedbackService.errorOccurred();
       return;
     }
 
     setState(() {
+      // Supprimer l'état actuel de l'historique
       _moveHistory.removeLast();
-      final previousGrid = _moveHistory.last.map((row) => List<int>.from(row)).toList();
 
-      _puzzle = _puzzle.copyWith(grid: previousGrid);
-      _selectedNumber = null;
+      // Restaurer l'état précédent (qui est maintenant le dernier)
+      _puzzle = _moveHistory.last.copyWith();
+
+      // Réinitialiser la sélection en fonction de la cellule sélectionnée
+      if (_selectedRow != null && _selectedCol != null) {
+        _selectedNumber = _puzzle.grid[_selectedRow!][_selectedCol!] == 0
+            ? null
+            : _puzzle.grid[_selectedRow!][_selectedCol!];
+      }
     });
 
     _feedbackService.undoAction();
@@ -331,7 +353,10 @@ class _GameScreenState extends State<GameScreen> {
       return;
     }
 
-    _saveMoveToHistory();
+    // Ne rien faire si la cellule est déjà vide
+    if (_puzzle.grid[_selectedRow!][_selectedCol!] == 0) {
+      return;
+    }
 
     setState(() {
       final newGrid = _puzzle.grid.map((row) => List<int>.from(row)).toList();
@@ -340,6 +365,9 @@ class _GameScreenState extends State<GameScreen> {
       // Effacer aussi les notes de cette cellule
       _puzzle = _puzzle.copyWith(grid: newGrid).clearNotes(_selectedRow!, _selectedCol!);
       _selectedNumber = null;
+
+      // Ajouter le nouvel état à l'historique
+      _addToHistory(_puzzle);
     });
 
     _feedbackService.numberRemoved();
@@ -365,8 +393,6 @@ class _GameScreenState extends State<GameScreen> {
       return;
     }
 
-    _saveMoveToHistory();
-
     setState(() {
       final newGrid = _puzzle.grid.map((row) => List<int>.from(row)).toList();
       final hintValue = _puzzle.solution[_selectedRow!][_selectedCol!];
@@ -380,6 +406,9 @@ class _GameScreenState extends State<GameScreen> {
       _selectedNumber = hintValue;
       _hintsRemaining--;
       _gameSession.hintsUsed++;
+
+      // Ajouter le nouvel état à l'historique
+      _addToHistory(_puzzle);
     });
 
     _feedbackService.hintUsed();
@@ -395,9 +424,12 @@ class _GameScreenState extends State<GameScreen> {
   void _showSettingsDialog() {
     showDialog(
       context: context,
-      builder: (context) => AlertDialog(
-        title: const Text('Paramètres'),
-        content: Column(
+      builder: (context) {
+        // Mettre le timer en pause quand le dialogue est ouvert
+        _stopTimer();
+        return AlertDialog(
+          title: const Text('Paramètres'),
+          content: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
             SwitchListTile(
@@ -452,13 +484,20 @@ class _GameScreenState extends State<GameScreen> {
             ),
           ],
         ),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.of(context).pop(),
-            child: const Text('Fermer'),
-          ),
-        ],
-      ),
+          actions: [
+            TextButton(
+              onPressed: () {
+                Navigator.of(context).pop();
+                // Reprendre le timer après fermeture
+                if (!_gameCompleted) {
+                  _startTimer();
+                }
+              },
+              child: const Text('Fermer'),
+            ),
+          ],
+        );
+      },
     );
   }
 
@@ -467,12 +506,33 @@ class _GameScreenState extends State<GameScreen> {
     final screenWidth = MediaQuery.of(context).size.width;
     final isLargeScreen = screenWidth > UIConstants.largeScreenBreakpoint;
 
-    return Scaffold(
-      appBar: AppBar(
-        title: const Text(AppTexts.appTitle),
-        backgroundColor: Colors.transparent,
-        elevation: 0,
-        actions: [
+    return PopScope(
+      canPop: true,
+      onPopInvoked: (didPop) {
+        if (!didPop) return;
+        // Arrêter le timer et sauvegarder avant de quitter
+        _stopTimer();
+        if (!_gameCompleted) {
+          _saveGame();
+        }
+      },
+      child: Scaffold(
+        appBar: AppBar(
+          title: const Text(AppTexts.appTitle),
+          backgroundColor: Colors.transparent,
+          elevation: 0,
+          leading: IconButton(
+            icon: const Icon(Icons.arrow_back),
+            onPressed: () {
+              // Arrêter le timer et sauvegarder avant de quitter
+              _stopTimer();
+              if (!_gameCompleted) {
+                _saveGame();
+              }
+              Navigator.of(context).pop();
+            },
+          ),
+          actions: [
           IconButton(
             icon: const Icon(Icons.settings),
             onPressed: _showSettingsDialog,
@@ -523,6 +583,7 @@ class _GameScreenState extends State<GameScreen> {
                     setState(() {
                       _showVictoryPopup = false;
                     });
+                    _stopTimer();
                     Navigator.of(context).pop();
                   },
                   onNewGame: () {
@@ -539,6 +600,7 @@ class _GameScreenState extends State<GameScreen> {
             ),
         ],
       ),
+    ),
     );
   }
 

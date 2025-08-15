@@ -34,14 +34,15 @@ extension DifficultyExtension on Difficulty {
   }
 
   /// Nombre de cellules à retirer selon la difficulté
+  /// Ajusté pour garantir une distribution équilibrée (min 2-3 indices par bloc)
   int get cellsToRemove {
     switch (this) {
       case Difficulty.facile:
-        return 40;
+        return 36;  // ~45 indices restants, 5 par bloc en moyenne
       case Difficulty.moyen:
-        return 50;
+        return 46;  // ~35 indices restants, 3-4 par bloc en moyenne
       case Difficulty.difficile:
-        return 60;
+        return 54;  // ~27 indices restants, 3 par bloc en moyenne
     }
   }
 }

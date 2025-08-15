@@ -1,4 +1,4 @@
-# sudoku_claude
+# Pixoku
 
 A new Flutter project.
 

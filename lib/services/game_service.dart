@@ -15,6 +15,7 @@ class GameService {
     required SudokuPuzzle puzzle,
     required int hintsRemaining,
     required Difficulty difficulty,
+    required int elapsedSeconds,
   }) async {
     try {
       final prefs = await SharedPreferences.getInstance();
@@ -26,6 +27,7 @@ class GameService {
         'hintsRemaining': hintsRemaining,
         'difficulty': difficulty.index,
         'savedAt': DateTime.now().toIso8601String(),
+        'elapsedSeconds': elapsedSeconds,
       };
 
       await prefs.setString(AppTexts.saveKey, json.encode(saveData));
@@ -101,12 +103,14 @@ class GameSaveData {
   final int hintsRemaining;
   final Difficulty difficulty;
   final DateTime savedAt;
+  final int elapsedSeconds;
 
   const GameSaveData({
     required this.puzzle,
     required this.hintsRemaining,
     required this.difficulty,
     required this.savedAt,
+    required this.elapsedSeconds,
   });
 
   factory GameSaveData.fromJson(Map<String, dynamic> json) {
@@ -115,6 +119,7 @@ class GameSaveData {
       hintsRemaining: json['hintsRemaining'] ?? GameConstants.initialHints,
       difficulty: Difficulty.values[json['difficulty'] ?? 0],
       savedAt: DateTime.tryParse(json['savedAt'] ?? '') ?? DateTime.now(),
+      elapsedSeconds: json['elapsedSeconds'] ?? 0,
     );
   }
 
@@ -124,6 +129,7 @@ class GameSaveData {
       'hintsRemaining': hintsRemaining,
       'difficulty': difficulty.index,
       'savedAt': savedAt.toIso8601String(),
+      'elapsedSeconds': elapsedSeconds,
     };
   }
 }

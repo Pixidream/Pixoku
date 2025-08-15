@@ -97,23 +97,179 @@ class SudokuGenerator {
     return true;
   }
 
-  /// Retire aléatoirement des cellules de la grille complète
+  /// Retire aléatoirement des cellules de la grille complète avec distribution équilibrée
   void _removeCells(List<List<int>> grid, int cellsToRemove) {
-    // Créer une liste de toutes les positions possibles
-    List<int> positions = List.generate(
-      GameConstants.gridSize * GameConstants.gridSize,
-      (i) => i
-    );
+    // Minimum d'indices à garder par bloc selon la difficulté
+    int minIndicesPerBlock = _getMinIndicesPerBlock(cellsToRemove);
+    const int totalBlocks = 9;
 
-    // Mélanger les positions pour un retrait aléatoire
-    positions.shuffle(_random);
+    // Calculer le nombre maximum de cellules à retirer par bloc
+    int cellsPerBlock = 9; // Chaque bloc a 9 cellules
+    int maxRemovablePerBlock = cellsPerBlock - minIndicesPerBlock;
 
-    // Retirer les cellules demandées
-    for (int i = 0; i < cellsToRemove && i < positions.length; i++) {
-      int pos = positions[i];
-      int row = pos ~/ GameConstants.gridSize;
-      int col = pos % GameConstants.gridSize;
-      grid[row][col] = 0;
+    // Si on doit retirer plus que le maximum possible, ajuster
+    if (cellsToRemove > maxRemovablePerBlock * totalBlocks) {
+      cellsToRemove = maxRemovablePerBlock * totalBlocks;
     }
+
+    // Créer une liste pour tracker combien de cellules ont été retirées de chaque bloc
+    List<List<int>> blockRemovals = List.generate(3, (_) => List.filled(3, 0));
+
+    // Distribuer équitablement les retraits entre les blocs
+    int baseRemovalsPerBlock = cellsToRemove ~/ totalBlocks;
+    int extraRemovals = cellsToRemove % totalBlocks;
+
+    // Créer une liste de toutes les positions, organisées par bloc
+    Map<String, List<List<int>>> blockPositions = {};
+
+    for (int blockRow = 0; blockRow < 3; blockRow++) {
+      for (int blockCol = 0; blockCol < 3; blockCol++) {
+        String key = '$blockRow,$blockCol';
+        blockPositions[key] = [];
+
+        for (int i = 0; i < 3; i++) {
+          for (int j = 0; j < 3; j++) {
+            int row = blockRow * 3 + i;
+            int col = blockCol * 3 + j;
+            blockPositions[key]!.add([row, col]);
+          }
+        }
+
+        // Mélanger les positions dans chaque bloc
+        blockPositions[key]!.shuffle(_random);
+      }
+    }
+
+    // Retirer les cellules bloc par bloc
+    int totalRemoved = 0;
+    List<String> blockKeys = blockPositions.keys.toList()..shuffle(_random);
+
+    for (String key in blockKeys) {
+      int blockRow = int.parse(key.split(',')[0]);
+      int blockCol = int.parse(key.split(',')[1]);
+
+      // Calculer combien retirer de ce bloc
+      int toRemoveFromBlock = baseRemovalsPerBlock;
+      if (extraRemovals > 0) {
+        toRemoveFromBlock++;
+        extraRemovals--;
+      }
+
+      // S'assurer de ne pas dépasser le maximum pour ce bloc
+      toRemoveFromBlock = toRemoveFromBlock.clamp(0, maxRemovablePerBlock);
+
+      // Retirer les cellules de ce bloc
+      List<List<int>> positions = blockPositions[key]!;
+      for (int i = 0; i < toRemoveFromBlock && i < positions.length; i++) {
+        int row = positions[i][0];
+        int col = positions[i][1];
+        grid[row][col] = 0;
+        blockRemovals[blockRow][blockCol]++;
+        totalRemoved++;
+
+        if (totalRemoved >= cellsToRemove) {
+          return;
+        }
+      }
+    }
+
+    // Si on n'a pas retiré assez (ce qui ne devrait pas arriver),
+    // retirer aléatoirement les cellules restantes en respectant les minimums
+    while (totalRemoved < cellsToRemove) {
+      bool removed = false;
+
+      for (String key in blockKeys) {
+        int blockRow = int.parse(key.split(',')[0]);
+        int blockCol = int.parse(key.split(',')[1]);
+
+        // Vérifier si on peut encore retirer de ce bloc
+        if (blockRemovals[blockRow][blockCol] < maxRemovablePerBlock) {
+          List<List<int>> positions = blockPositions[key]!;
+
+          // Trouver une cellule non vide dans ce bloc
+          for (List<int> pos in positions) {
+            if (grid[pos[0]][pos[1]] != 0) {
+              grid[pos[0]][pos[1]] = 0;
+              blockRemovals[blockRow][blockCol]++;
+              totalRemoved++;
+              removed = true;
+              break;
+            }
+          }
+        }
+
+        if (removed || totalRemoved >= cellsToRemove) {
+          break;
+        }
+      }
+
+      // Sécurité pour éviter une boucle infinie
+      if (!removed) {
+        break;
+      }
+    }
+
+    // Vérifier la distribution finale
+    if (!_validateDistribution(grid, minIndicesPerBlock)) {
+      // Si la distribution n'est pas bonne, réessayer avec une nouvelle grille
+      _removeCells(grid, cellsToRemove);
+    }
+  }
+
+  /// Détermine le nombre minimum d'indices par bloc selon la difficulté
+  int _getMinIndicesPerBlock(int cellsToRemove) {
+    // Plus on retire de cellules, plus la difficulté est élevée
+    if (cellsToRemove <= 40) {
+      // Facile : au moins 3-4 indices par bloc
+      return 3;
+    } else if (cellsToRemove <= 50) {
+      // Moyen : au moins 2-3 indices par bloc
+      return 2;
+    } else {
+      // Difficile : au moins 2 indices par bloc
+      return 2;
+    }
+  }
+
+  /// Valide que la distribution des indices est acceptable
+  bool _validateDistribution(List<List<int>> grid, int minIndicesPerBlock) {
+    // Vérifier chaque bloc 3x3
+    for (int blockRow = 0; blockRow < 3; blockRow++) {
+      for (int blockCol = 0; blockCol < 3; blockCol++) {
+        int count = 0;
+
+        for (int i = 0; i < 3; i++) {
+          for (int j = 0; j < 3; j++) {
+            int row = blockRow * 3 + i;
+            int col = blockCol * 3 + j;
+            if (grid[row][col] != 0) {
+              count++;
+            }
+          }
+        }
+
+        // Si un bloc a moins d'indices que le minimum requis
+        if (count < minIndicesPerBlock) {
+          return false;
+        }
+      }
+    }
+
+    // Vérifier aussi que chaque ligne et colonne a au moins 2 indices
+    for (int i = 0; i < GameConstants.gridSize; i++) {
+      int rowCount = 0;
+      int colCount = 0;
+
+      for (int j = 0; j < GameConstants.gridSize; j++) {
+        if (grid[i][j] != 0) rowCount++;
+        if (grid[j][i] != 0) colCount++;
+      }
+
+      if (rowCount < 2 || colCount < 2) {
+        return false;
+      }
+    }
+
+    return true;
   }
 }

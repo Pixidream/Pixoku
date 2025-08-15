@@ -1,6 +1,6 @@
 {
-    "name": "sudoku_claude",
-    "short_name": "sudoku_claude",
+    "name": "pixoku",
+    "short_name": "pixoku",
     "start_url": ".",
     "display": "standalone",
     "background_color": "#0175C2",
