@@ -44,7 +44,7 @@ dependencies:
   audioplayers: ^5.2.1
 
   # Haptic feedback (vibration)
-  vibration: ^1.8.4
+  vibration: ^2.0.0
 
 dev_dependencies:
   flutter_test:
