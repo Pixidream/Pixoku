@@ -1,0 +1,352 @@
+import 'package:flutter/material.dart';
+
+class AnimationService {
+  static final AnimationService _instance = AnimationService._internal();
+  factory AnimationService() => _instance;
+  AnimationService._internal();
+
+  // Animation controllers pour différents types d'animations
+  static const Duration _defaultDuration = Duration(milliseconds: 300);
+  static const Duration _fastDuration = Duration(milliseconds: 150);
+  static const Duration _slowDuration = Duration(milliseconds: 500);
+
+  // Animation pour la sélection de cellule
+  static Animation<double> createCellSelectionAnimation(AnimationController controller) {
+    return Tween<double>(
+      begin: 1.0,
+      end: 1.1,
+    ).animate(CurvedAnimation(
+      parent: controller,
+      curve: Curves.elasticOut,
+    ));
+  }
+
+  // Animation pour le remplissage de cellule
+  static Animation<double> createCellFillAnimation(AnimationController controller) {
+    return Tween<double>(
+      begin: 0.0,
+      end: 1.0,
+    ).animate(CurvedAnimation(
+      parent: controller,
+      curve: Curves.bounceOut,
+    ));
+  }
+
+  // Animation d'erreur (shake)
+  static Animation<double> createShakeAnimation(AnimationController controller) {
+    return Tween<double>(
+      begin: 0.0,
+      end: 1.0,
+    ).animate(CurvedAnimation(
+      parent: controller,
+      curve: Curves.elasticInOut,
+    ));
+  }
+
+  // Animation de succès (scale + rotation)
+  static Animation<double> createSuccessScaleAnimation(AnimationController controller) {
+    return Tween<double>(
+      begin: 0.8,
+      end: 1.2,
+    ).animate(CurvedAnimation(
+      parent: controller,
+      curve: Curves.elasticOut,
+    ));
+  }
+
+  static Animation<double> createSuccessRotationAnimation(AnimationController controller) {
+    return Tween<double>(
+      begin: 0.0,
+      end: 0.1,
+    ).animate(CurvedAnimation(
+      parent: controller,
+      curve: Curves.easeInOut,
+    ));
+  }
+
+  // Animation de fadeIn pour les éléments d'interface
+  static Animation<double> createFadeInAnimation(AnimationController controller) {
+    return Tween<double>(
+      begin: 0.0,
+      end: 1.0,
+    ).animate(CurvedAnimation(
+      parent: controller,
+      curve: Curves.easeIn,
+    ));
+  }
+
+  // Animation de slideUp pour les popups
+  static Animation<Offset> createSlideUpAnimation(AnimationController controller) {
+    return Tween<Offset>(
+      begin: const Offset(0.0, 1.0),
+      end: Offset.zero,
+    ).animate(CurvedAnimation(
+      parent: controller,
+      curve: Curves.easeOutBack,
+    ));
+  }
+
+  // Animation de bounce pour les boutons
+  static Animation<double> createButtonBounceAnimation(AnimationController controller) {
+    return Tween<double>(
+      begin: 1.0,
+      end: 0.95,
+    ).animate(CurvedAnimation(
+      parent: controller,
+      curve: Curves.easeInOut,
+    ));
+  }
+
+  // Animation de highlight pour les régions (blocs, lignes, colonnes)
+  static Animation<double> createHighlightAnimation(AnimationController controller) {
+    return Tween<double>(
+      begin: 0.0,
+      end: 1.0,
+    ).animate(CurvedAnimation(
+      parent: controller,
+      curve: Curves.easeInOut,
+    ));
+  }
+
+  // Animation de progress pour le timer
+  static Animation<double> createProgressAnimation(AnimationController controller) {
+    return Tween<double>(
+      begin: 0.0,
+      end: 1.0,
+    ).animate(CurvedAnimation(
+      parent: controller,
+      curve: Curves.linear,
+    ));
+  }
+
+  // Animation de completion pour finir le jeu
+  static Animation<double> createCompletionAnimation(AnimationController controller) {
+    return Tween<double>(
+      begin: 0.0,
+      end: 1.0,
+    ).animate(CurvedAnimation(
+      parent: controller,
+      curve: Curves.bounceOut,
+    ));
+  }
+
+  // Animation de pulse pour les éléments importants
+  static Animation<double> createPulseAnimation(AnimationController controller) {
+    return Tween<double>(
+      begin: 1.0,
+      end: 1.05,
+    ).animate(CurvedAnimation(
+      parent: controller,
+      curve: Curves.easeInOut,
+    ));
+  }
+
+  // Animation pour les transitions de page
+  static Widget createPageTransition({
+    required Widget child,
+    required Animation<double> animation,
+    PageTransitionType type = PageTransitionType.slideUp,
+  }) {
+    switch (type) {
+      case PageTransitionType.slideUp:
+        return SlideTransition(
+          position: Tween<Offset>(
+            begin: const Offset(0.0, 1.0),
+            end: Offset.zero,
+          ).animate(CurvedAnimation(
+            parent: animation,
+            curve: Curves.easeOutCubic,
+          )),
+          child: child,
+        );
+      case PageTransitionType.slideRight:
+        return SlideTransition(
+          position: Tween<Offset>(
+            begin: const Offset(1.0, 0.0),
+            end: Offset.zero,
+          ).animate(CurvedAnimation(
+            parent: animation,
+            curve: Curves.easeOutCubic,
+          )),
+          child: child,
+        );
+      case PageTransitionType.fade:
+        return FadeTransition(
+          opacity: animation,
+          child: child,
+        );
+      case PageTransitionType.scale:
+        return ScaleTransition(
+          scale: animation,
+          child: child,
+        );
+    }
+  }
+
+  // Widget pour l'animation de shake
+  static Widget createShakeWidget({
+    required Widget child,
+    required Animation<double> animation,
+  }) {
+    return AnimatedBuilder(
+      animation: animation,
+      child: child,
+      builder: (context, child) {
+        final sineValue = Curves.elasticInOut.transform(animation.value);
+        return Transform.translate(
+          offset: Offset(sineValue * 10, 0),
+          child: child,
+        );
+      },
+    );
+  }
+
+  // Widget pour l'animation de bounce
+  static Widget createBounceWidget({
+    required Widget child,
+    required Animation<double> animation,
+  }) {
+    return AnimatedBuilder(
+      animation: animation,
+      child: child,
+      builder: (context, child) {
+        return Transform.scale(
+          scale: animation.value,
+          child: child,
+        );
+      },
+    );
+  }
+
+  // Widget pour l'animation de pulse
+  static Widget createPulseWidget({
+    required Widget child,
+    required Animation<double> animation,
+  }) {
+    return AnimatedBuilder(
+      animation: animation,
+      child: child,
+      builder: (context, child) {
+        return Transform.scale(
+          scale: 1.0 + (animation.value * 0.1),
+          child: child,
+        );
+      },
+    );
+  }
+
+  // Widget pour l'animation de rotation de succès
+  static Widget createSuccessRotationWidget({
+    required Widget child,
+    required Animation<double> scaleAnimation,
+    required Animation<double> rotationAnimation,
+  }) {
+    return AnimatedBuilder(
+      animation: Listenable.merge([scaleAnimation, rotationAnimation]),
+      child: child,
+      builder: (context, child) {
+        return Transform.scale(
+          scale: scaleAnimation.value,
+          child: Transform.rotate(
+            angle: rotationAnimation.value,
+            child: child,
+          ),
+        );
+      },
+    );
+  }
+
+  // Méthodes utilitaires pour créer des controllers avec durées prédéfinies
+  static AnimationController createDefaultController(TickerProvider vsync) {
+    return AnimationController(
+      duration: _defaultDuration,
+      vsync: vsync,
+    );
+  }
+
+  static AnimationController createFastController(TickerProvider vsync) {
+    return AnimationController(
+      duration: _fastDuration,
+      vsync: vsync,
+    );
+  }
+
+  static AnimationController createSlowController(TickerProvider vsync) {
+    return AnimationController(
+      duration: _slowDuration,
+      vsync: vsync,
+    );
+  }
+
+  static AnimationController createCustomController(
+    TickerProvider vsync,
+    Duration duration
+  ) {
+    return AnimationController(
+      duration: duration,
+      vsync: vsync,
+    );
+  }
+
+  // Méthodes pour jouer des séquences d'animations
+  static Future<void> playSequence(List<AnimationController> controllers) async {
+    for (final controller in controllers) {
+      await controller.forward();
+    }
+  }
+
+  static Future<void> playParallel(List<AnimationController> controllers) async {
+    final futures = controllers.map((c) => c.forward()).toList();
+    await Future.wait(futures);
+  }
+
+  // Méthode pour reset tous les controllers
+  static void resetControllers(List<AnimationController> controllers) {
+    for (final controller in controllers) {
+      controller.reset();
+    }
+  }
+}
+
+// Enum pour les types de transitions de page
+enum PageTransitionType {
+  slideUp,
+  slideRight,
+  fade,
+  scale,
+}
+
+// Classe pour les configurations d'animation
+class AnimationConfig {
+  final Duration duration;
+  final Curve curve;
+  final double? beginValue;
+  final double? endValue;
+
+  const AnimationConfig({
+    this.duration = const Duration(milliseconds: 300),
+    this.curve = Curves.easeInOut,
+    this.beginValue,
+    this.endValue,
+  });
+
+  static const AnimationConfig fast = AnimationConfig(
+    duration: Duration(milliseconds: 150),
+    curve: Curves.easeOut,
+  );
+
+  static const AnimationConfig slow = AnimationConfig(
+    duration: Duration(milliseconds: 500),
+    curve: Curves.easeInOut,
+  );
+
+  static const AnimationConfig bounce = AnimationConfig(
+    duration: Duration(milliseconds: 400),
+    curve: Curves.bounceOut,
+  );
+
+  static const AnimationConfig elastic = AnimationConfig(
+    duration: Duration(milliseconds: 600),
+    curve: Curves.elasticOut,
+  );
+}
