@@ -76,7 +76,7 @@ class AnimatedSudokuCellState extends State<AnimatedSudokuCell>
     _successController = AnimationService.createSlowController(this);
     _pulseController = AnimationService.createCustomController(
       this,
-      const Duration(milliseconds: 1000)
+      const Duration(milliseconds: 2000)  // Ralenti de 1s à 2s pour un pulse moins distrayant
     );
     _highlightController = AnimationService.createDefaultController(this);
 
@@ -290,7 +290,7 @@ class AnimatedSudokuCellState extends State<AnimatedSudokuCell>
         // Apply selection scaling
         if (_selectionAnimation.value > 1.0) {
           animatedChild = Transform.scale(
-            scale: _selectionAnimation.value.clamp(0.9, 1.2),  // Limiter pour éviter les valeurs extrêmes
+            scale: _selectionAnimation.value.clamp(0.95, 1.05),  // Réduit pour un effet plus subtil
             child: animatedChild,
           );
         }
@@ -298,7 +298,7 @@ class AnimatedSudokuCellState extends State<AnimatedSudokuCell>
         // Apply fill animation (bounce effect)
         if (_fillAnimation.value > 0) {
           final clampedValue = _fillAnimation.value.clamp(0.0, 1.0);
-          final scale = 1.0 + (clampedValue * 0.2);
+          final scale = 1.0 + (clampedValue * 0.08);  // Réduit de 0.2 à 0.08 pour un bounce plus léger
           animatedChild = Transform.scale(
             scale: scale,
             child: animatedChild,
@@ -308,7 +308,7 @@ class AnimatedSudokuCellState extends State<AnimatedSudokuCell>
         // Apply pulse animation for highlighted cells
         if (widget.isHighlighted && _pulseAnimation.value > 1.0) {
           animatedChild = Transform.scale(
-            scale: _pulseAnimation.value.clamp(0.95, 1.1),  // Limiter le pulse pour éviter les extrêmes
+            scale: _pulseAnimation.value.clamp(0.98, 1.02),  // Réduit pour un pulse très subtil
             child: animatedChild,
           );
         }

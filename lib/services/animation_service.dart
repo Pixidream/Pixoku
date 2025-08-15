@@ -7,15 +7,15 @@ class AnimationService {
   AnimationService._internal();
 
   // Animation controllers pour différents types d'animations
-  static const Duration _defaultDuration = Duration(milliseconds: 300);
-  static const Duration _fastDuration = Duration(milliseconds: 150);
-  static const Duration _slowDuration = Duration(milliseconds: 500);
+  static const Duration _defaultDuration = Duration(milliseconds: 200);  // Réduit de 300ms à 200ms
+  static const Duration _fastDuration = Duration(milliseconds: 100);     // Réduit de 150ms à 100ms
+  static const Duration _slowDuration = Duration(milliseconds: 350);     // Réduit de 500ms à 350ms
 
   // Animation pour la sélection de cellule
   static Animation<double> createCellSelectionAnimation(AnimationController controller) {
     return Tween<double>(
       begin: 1.0,
-      end: 1.1,
+      end: 1.03,  // Réduit de 1.1 à 1.03 pour un effet plus subtil
     ).animate(CurvedAnimation(
       parent: controller,
       curve: Curves.easeOutBack,  // Utiliser easeOutBack au lieu d'elasticOut pour éviter les dépassements
@@ -47,8 +47,8 @@ class AnimationService {
   // Animation de succès (scale + rotation)
   static Animation<double> createSuccessScaleAnimation(AnimationController controller) {
     return Tween<double>(
-      begin: 0.8,
-      end: 1.2,
+      begin: 0.95,  // Réduit l'amplitude du scale
+      end: 1.05,    // Réduit de 1.2 à 1.05
     ).animate(CurvedAnimation(
       parent: controller,
       curve: Curves.bounceOut,  // Utiliser bounceOut au lieu d'elasticOut pour éviter les dépassements
@@ -135,7 +135,7 @@ class AnimationService {
   static Animation<double> createPulseAnimation(AnimationController controller) {
     return Tween<double>(
       begin: 1.0,
-      end: 1.05,
+      end: 1.02,  // Réduit de 1.05 à 1.02 pour un pulse plus subtil
     ).animate(CurvedAnimation(
       parent: controller,
       curve: Curves.easeInOut,
@@ -195,7 +195,7 @@ class AnimationService {
       builder: (context, child) {
         // Utiliser sin pour créer l'effet de shake avec atténuation
         final double progress = animation.value.clamp(0.0, 1.0);  // S'assurer que la valeur est dans [0,1]
-        final double offset = math.sin(progress * math.pi * 4) * 10 * (1 - progress);
+        final double offset = math.sin(progress * math.pi * 3) * 4 * (1 - progress);  // Réduit de 10 à 4 pixels et de 4 oscillations à 3
         return Transform.translate(
           offset: Offset(offset, 0),
           child: child,
@@ -232,7 +232,7 @@ class AnimationService {
       builder: (context, child) {
         final double clampedValue = animation.value.clamp(0.0, 1.0);
         return Transform.scale(
-          scale: 1.0 + (clampedValue * 0.1),
+          scale: 1.0 + (clampedValue * 0.05),  // Réduit de 0.1 à 0.05 pour un pulse plus doux
           child: child,
         );
       },
@@ -335,22 +335,22 @@ class AnimationConfig {
   });
 
   static const AnimationConfig fast = AnimationConfig(
-    duration: Duration(milliseconds: 150),
+    duration: Duration(milliseconds: 100),  // Réduit de 150ms à 100ms
     curve: Curves.easeOut,
   );
 
   static const AnimationConfig slow = AnimationConfig(
-    duration: Duration(milliseconds: 500),
+    duration: Duration(milliseconds: 350),  // Réduit de 500ms à 350ms
     curve: Curves.easeInOut,
   );
 
   static const AnimationConfig bounce = AnimationConfig(
-    duration: Duration(milliseconds: 400),
+    duration: Duration(milliseconds: 250),  // Réduit de 400ms à 250ms
     curve: Curves.bounceOut,
   );
 
   static const AnimationConfig elastic = AnimationConfig(
-    duration: Duration(milliseconds: 600),
+    duration: Duration(milliseconds: 400),  // Réduit de 600ms à 400ms
     curve: Curves.elasticOut,
   );
 }
