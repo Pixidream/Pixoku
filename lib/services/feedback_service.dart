@@ -138,7 +138,7 @@ class FeedbackService {
     try {
       // Vérifier si la vibration est disponible
       final hasVibration = await Vibration.hasVibrator();
-      if (!hasVibration!) return;
+      if (!hasVibration) return;
 
       final pattern = _vibrationPatterns[type] ?? VibrationPattern.light;
       await _executeVibrationPattern(pattern);
