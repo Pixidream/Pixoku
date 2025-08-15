@@ -1,3 +1,4 @@
+import 'dart:math' as math;
 import 'package:flutter/material.dart';
 
 class AnimationService {
@@ -17,7 +18,7 @@ class AnimationService {
       end: 1.1,
     ).animate(CurvedAnimation(
       parent: controller,
-      curve: Curves.elasticOut,
+      curve: Curves.easeOutBack,  // Utiliser easeOutBack au lieu d'elasticOut pour éviter les dépassements
     ));
   }
 
@@ -39,7 +40,7 @@ class AnimationService {
       end: 1.0,
     ).animate(CurvedAnimation(
       parent: controller,
-      curve: Curves.elasticInOut,
+      curve: Curves.linear,  // Linéaire car on applique la courbe dans le widget
     ));
   }
 
@@ -50,7 +51,7 @@ class AnimationService {
       end: 1.2,
     ).animate(CurvedAnimation(
       parent: controller,
-      curve: Curves.elasticOut,
+      curve: Curves.bounceOut,  // Utiliser bounceOut au lieu d'elasticOut pour éviter les dépassements
     ));
   }
 
@@ -192,9 +193,11 @@ class AnimationService {
       animation: animation,
       child: child,
       builder: (context, child) {
-        final sineValue = Curves.elasticInOut.transform(animation.value);
+        // Utiliser sin pour créer l'effet de shake avec atténuation
+        final double progress = animation.value.clamp(0.0, 1.0);  // S'assurer que la valeur est dans [0,1]
+        final double offset = math.sin(progress * math.pi * 4) * 10 * (1 - progress);
         return Transform.translate(
-          offset: Offset(sineValue * 10, 0),
+          offset: Offset(offset, 0),
           child: child,
         );
       },
@@ -211,7 +214,7 @@ class AnimationService {
       child: child,
       builder: (context, child) {
         return Transform.scale(
-          scale: animation.value,
+          scale: animation.value.clamp(0.0, 2.0),  // Clamper pour éviter les valeurs extrêmes
           child: child,
         );
       },
@@ -227,8 +230,9 @@ class AnimationService {
       animation: animation,
       child: child,
       builder: (context, child) {
+        final double clampedValue = animation.value.clamp(0.0, 1.0);
         return Transform.scale(
-          scale: 1.0 + (animation.value * 0.1),
+          scale: 1.0 + (clampedValue * 0.1),
           child: child,
         );
       },
@@ -246,9 +250,9 @@ class AnimationService {
       child: child,
       builder: (context, child) {
         return Transform.scale(
-          scale: scaleAnimation.value,
+          scale: scaleAnimation.value.clamp(0.5, 1.5),  // Limiter le scale pour éviter les extrêmes
           child: Transform.rotate(
-            angle: rotationAnimation.value,
+            angle: rotationAnimation.value.clamp(-math.pi, math.pi),  // Limiter la rotation
             child: child,
           ),
         );

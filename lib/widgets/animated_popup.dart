@@ -58,7 +58,7 @@ class _AnimatedPopupState extends State<AnimatedPopup>
       end: 1.0,
     ).animate(CurvedAnimation(
       parent: _controller,
-      curve: Curves.elasticOut,
+      curve: Curves.easeOutBack,  // Utiliser easeOutBack au lieu d'elasticOut pour éviter les dépassements
     ));
 
     // Fade animation
@@ -85,7 +85,7 @@ class _AnimatedPopupState extends State<AnimatedPopup>
       end: 1.0,
     ).animate(CurvedAnimation(
       parent: _controller,
-      curve: Curves.elasticOut,
+      curve: Curves.easeOutBack,  // Utiliser easeOutBack au lieu d'elasticOut pour éviter les dépassements
     ));
   }
 
@@ -157,7 +157,7 @@ class _AnimatedPopupState extends State<AnimatedPopup>
           child: animatedChild,
           builder: (context, child) {
             return Transform.scale(
-              scale: _scaleAnimation.value,
+              scale: _scaleAnimation.value.clamp(0.0, 1.5),  // Limiter pour éviter les valeurs extrêmes
               child: child,
             );
           },
@@ -170,7 +170,7 @@ class _AnimatedPopupState extends State<AnimatedPopup>
           child: animatedChild,
           builder: (context, child) {
             return Opacity(
-              opacity: _fadeAnimation.value,
+              opacity: _fadeAnimation.value.clamp(0.0, 1.0),  // S'assurer que l'opacité reste dans [0,1]
               child: child,
             );
           },
@@ -212,9 +212,9 @@ class _AnimatedPopupState extends State<AnimatedPopup>
           child: animatedChild,
           builder: (context, child) {
             return Transform.scale(
-              scale: _scaleAnimation.value,
+              scale: _scaleAnimation.value.clamp(0.0, 1.5),  // Limiter le scale
               child: Transform.rotate(
-                angle: _rotationAnimation.value * 0.1,
+                angle: (_rotationAnimation.value * 0.1).clamp(-0.5, 0.5),  // Limiter la rotation
                 child: child,
               ),
             );
@@ -229,7 +229,7 @@ class _AnimatedPopupState extends State<AnimatedPopup>
           child: animatedChild,
           builder: (context, child) {
             return Transform.scale(
-              scale: _scaleAnimation.value,
+              scale: _scaleAnimation.value.clamp(0.0, 1.5),  // Limiter pour éviter les valeurs extrêmes
               child: child,
             );
           },
@@ -262,7 +262,7 @@ class _AnimatedPopupState extends State<AnimatedPopup>
                 onTap: _handleBarrierTap,
                 child: Container(
                   color: (widget.barrierColor ?? Colors.black54)
-                      .withValues(alpha: _fadeAnimation.value * 0.5),
+                      .withValues(alpha: (_fadeAnimation.value * 0.5).clamp(0.0, 1.0)),
                   width: double.infinity,
                   height: double.infinity,
                 ),

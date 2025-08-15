@@ -290,14 +290,15 @@ class AnimatedSudokuCellState extends State<AnimatedSudokuCell>
         // Apply selection scaling
         if (_selectionAnimation.value > 1.0) {
           animatedChild = Transform.scale(
-            scale: _selectionAnimation.value,
+            scale: _selectionAnimation.value.clamp(0.9, 1.2),  // Limiter pour éviter les valeurs extrêmes
             child: animatedChild,
           );
         }
 
         // Apply fill animation (bounce effect)
         if (_fillAnimation.value > 0) {
-          final scale = 1.0 + (_fillAnimation.value * 0.2);
+          final clampedValue = _fillAnimation.value.clamp(0.0, 1.0);
+          final scale = 1.0 + (clampedValue * 0.2);
           animatedChild = Transform.scale(
             scale: scale,
             child: animatedChild,
@@ -307,15 +308,16 @@ class AnimatedSudokuCellState extends State<AnimatedSudokuCell>
         // Apply pulse animation for highlighted cells
         if (widget.isHighlighted && _pulseAnimation.value > 1.0) {
           animatedChild = Transform.scale(
-            scale: _pulseAnimation.value,
+            scale: _pulseAnimation.value.clamp(0.95, 1.1),  // Limiter le pulse pour éviter les extrêmes
             child: animatedChild,
           );
         }
 
         // Apply highlight opacity animation
         if (_highlightAnimation.value > 0) {
+          final clampedHighlight = _highlightAnimation.value.clamp(0.0, 1.0);
           animatedChild = Opacity(
-            opacity: 0.7 + (0.3 * _highlightAnimation.value),
+            opacity: (0.7 + (0.3 * clampedHighlight)).clamp(0.0, 1.0),  // S'assurer que l'opacité reste dans [0,1]
             child: animatedChild,
           );
         }
